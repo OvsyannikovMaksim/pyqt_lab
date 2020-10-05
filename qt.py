@@ -1,99 +1,215 @@
-# import sys
-# from PyQt5.QtWidgets import (QWidget, QToolTip,
-#     QPushButton, QApplication, QDesktopWidget)
-# from PyQt5.QtGui import QFont
-# from PyQt5.QtCore import QCoreApplication
+from PyQt5.QtCore import Qt, QTimer, QCoreApplication
+from PyQt5.QtGui import QIntValidator, QFont, QPalette, QColor # QIntValidator проверяет, что пользователем вводятся целые числа
+from PyQt5.QtWidgets import (
+        QApplication, QWidget, 
+        QHBoxLayout, QVBoxLayout, 
+        QPushButton, QLabel, QLineEdit,
+        QComboBox, QTableWidget, QTableWidgetItem)
+import mysql.connector
+from mysql.connector import Error
+import datetime        
+desc_txt=''' тут текст о том что делает приложение '''
+requests = ["Информация о концертах на выбранной площадке",
+"Информация о концертах, в которых участвует выбранный исполнитель"]
+procedures = ['ConcertsInHall', 'ConcertsWithBand18']
 
-# class main_window(QWidget):
-
-#     def __init__(self):
-#         super().__init__()
-
-#         self.initUI()
-
-
-#     def initUI(self):
-
-#         self.resize(500, 300)
-#         self.center()
-#         self.button_open('Выбрать', [100,250])
-#         self.button_close([300,250])
-#         self.setWindowTitle('Center')
-#         self.show()
-
-
-#     def center(self):
-
-#         qr = self.frameGeometry()
-#         cp = QDesktopWidget().availableGeometry().center()
-#         qr.moveCenter(cp)
-#         self.move(qr.topLeft())
-
-#     def button_open(self, name, pos):
-
-#         btn = QPushButton(name, self)
-#         btn.resize(100,35)
-#         btn.clicked.connect()
-#         btn.move(pos[0], pos[1])
-
-#     def button_close(self, pos):
-
-#         btn = QPushButton('Закрыть', self)
-#         btn.resize(100,35)
-#         btn.clicked.connect(QCoreApplication.instance().quit)
-#         btn.move(pos[0], pos[1])
-
-# if __name__ == '__main__':
-
-#     app = QApplication(sys.argv)
-#     ex = main_window()
-#     sys.exit(app.exec_())
+#                    _oo0oo_
+#                   o8888888o
+#                   88" . "88
+#                   (| -_- |)
+#                   0\  =  /0
+#                 ___/`---'\___
+#                .' \\|     |// '.
+#               / \\|||  :  |||// \
+#              / _||||| -:- |||||- \
+#             |   | \\\  -  /// |   |
+#             | \_|  ''\---/''  |_/ |
+#            \  .-\__  '-'  ___/-. /
+#          ___'. .'  /--.--\  `. .'___
+#        ."" '<  `.___\_<|>_/___.' >' "".
+#       | | :  `- \`.;`\ _ /`;.`/ - ` : | |
+#       \  \ `_.   \_ __\ /__ _/   .-` /  /
+#   =====`-.____`.___ \_____/___.-`___.-'=====
+#                        `=---='
 
 
-import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QPushButton
+#   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-class Window1(QWidget):
-    def __init__(self):
-        super(Window1, self).__init__()
-        self.setWindowTitle('Window1')
-        self.resize(500, 300)
-        self.button1 = QPushButton(self)
-        self.button1.setText('Выбор')
-        self.button1.resize(100,35)
-        self.button1.move(100,250)
-        self.button1.show()
-        self.button_close = QPushButton(self)
-        self.button_close.setText('Закрыть')
-        self.button_close.resize(100,35)
-        self.button_close.move(300,250)
-        self.button_close.show()
+
+# Work with MySQL
+# Connection to necessary DB 
+def create_connection(host_name, user_name, user_password, db_name):
+    connection = None
+    try:
+        connection = mysql.connector.connect(
+            host=host_name,
+            user=user_name,
+            passwd=user_password,
+            database=db_name
+        )
+        print("Connection to MySQL DB successful")
+    except Error as e:
+        print(f"The error '{e}' occurred")
+
+    return connection
+
+# Find result of request by query
+def execute_read_query(connection, query):
+    cursor = connection.cursor()
+    result = None
+    try:
+        cursor.execute(query)
+        result = cursor.fetchall()
+        return result
+    except Error as e:
+        print(f"The error '{e}' occurred")
+
+# Find result of request by procedure
+def execute_procedure(connection, nameOfProcedure, args):
+    cursor = connection.cursor()
+    result = []
+    try:
+        cursor.callproc(nameOfProcedure, args)
+        for _str in cursor.stored_results():
+            result=_str.fetchall()
+        return result    
+    except Error as e:
+        print(f"The error '{e}' occurred")
 
 
-class Window2(QWidget):
-    def __init__(self):
-        super(Window2, self).__init__()
-        self.setWindowTitle('Window2')
+connection=create_connection('localhost', 'root', 'Vagner99', 'ConcertHalls')
+
+##############################################################
+
+# def data_check(lst_in):
+#     for i in range(len(lst_in)):
+#         for j in range(len(lst_in[0])):
+#             if isinstance(lst_in[i][j], datetime.date) or isinstance(lst_in[i][j], datetime.date):
+                
+
+                
+
+##############################################################
+
+# Сreation of UI of Application
+# Window with input parameters for the request
+class InputWindow(QWidget):
+    def __init__(self, parent = None, flags = Qt.WindowFlags()):
+        super().__init__(parent=parent, flags=flags)
+        self.initUI()
+        self.connects()
+        self.set_appear()
+        self.show()
+
+    def initUI(self):
+
+        self.txt_on_IW = QLabel('Введите данные')
+        self.next_button = QPushButton('Далее', self)
+        layout_col = QVBoxLayout()
+        layout_col.addWidget(self.txt_on_IW, alignment=Qt.AlignCenter)
+        if txt_choose==2:
+            layout_row = QHBoxLayout()
+            self.line1=QLineEdit()
+            self.line2=QLineEdit()
+            layout_row.addWidget(self.line1)
+            layout_row.addWidget(self.line2)
+            layout_col.addLayout(layout_row)
+        elif txt_choose==1 or txt_choose==0:
+            self.line1=QLineEdit()
+            layout_col.addWidget(self.line1)
+        layout_col.addWidget(self.next_button, alignment=Qt.AlignCenter)
+        self.setLayout(layout_col)
 
 
-class MainWindow(QMainWindow):
-    def __init__(self):
-        super(MainWindow, self).__init__()
-        self.setWindowTitle('MainWindow')
+    def set_appear(self):
+        self.setWindowTitle('Input Window')
+        self.resize(650, 400)
+        self.move(500, 400)
 
-    def show_window_1(self):
-        self.w1 = Window1()
-        self.w1.button1.clicked.connect(self.show_window_2)
-        self.w1.button_close.clicked.connect(self.w1.close)
-        self.w1.show()
+    def connects(self):
+        self.next_button.clicked.connect(self.open_result_window)
 
-    def show_window_2(self):
-        self.w2 = Window2()
-        self.w2.show()
+    def open_result_window(self):
+        global RW, txt_in
+        txt_in=self.line1.text()
+        RW = ResultWindow()
+        self.hide()
+
+
+
+# Window return result of request
+class ResultWindow(QWidget):
+    def __init__(self, parent = None, flags = Qt.WindowFlags()):
+        super().__init__(parent=parent, flags=flags)
+        self.initUI()
+        #self.connects()
+        self.set_appear()
+        self.show()
+
+    def initUI(self):
+        result = execute_procedure(connection, procedures[txt_choose], [txt_in])
+        print(result)
+        self.table = QTableWidget()  
+        self.table.setColumnCount(len(result[0]))    
+        self.table.setRowCount(len(result)) 
+        for i in range(len(result)):
+            for j in range(len(result[0])):
+                self.table.setItem(i, j, QTableWidgetItem(str(result[i][j])))
+        layout_col = QVBoxLayout()
+        self.table.resizeColumnsToContents()
+        layout_col.addWidget(self.table)
+        self.setLayout(layout_col)
+
+
+    def set_appear(self):
+        self.setWindowTitle('Result Window')
+        self.resize(650, 400)
+        self.move(500, 400)
+
+    
+
+# Main window with choosing of the request
+class MainWindow(QWidget):
+    def __init__(self, parent = None, flags = Qt.WindowFlags()):
+        super().__init__(parent=parent, flags=flags)
+        self.initUI()
+        self.connects()
+        self.set_appear()
+        self.show()
+
+    def initUI(self):
+        self.choose_button = QPushButton('Выбрать', self)
+        self.close_button = QPushButton('Закрыть', self)
+        self.describe_txt = QLabel(desc_txt)
+        self.choose = QComboBox()
+        self.choose.addItems(requests)
+        layout_col = QVBoxLayout()
+        layout_col.addWidget(self.describe_txt, alignment=Qt.AlignCenter)
+        layout_col.addWidget(self.choose, alignment=Qt.AlignCenter)
+        layout_row = QHBoxLayout()
+        layout_row.addWidget(self.choose_button)
+        layout_row.addWidget(self.close_button)
+        layout_col.addLayout(layout_row)
+        self.setLayout(layout_col)
+
+
+    def set_appear(self):
+        self.setWindowTitle('Start Window')
+        self.resize(650, 400)
+        self.move(500, 400)
+
+    def connects(self):
+        self.choose_button.clicked.connect(self.open_input_window)
+        self.close_button.clicked.connect(QCoreApplication.instance().quit)
+
+    def open_input_window(self):
+        global IW, txt_choose
+        txt_choose=self.choose.currentIndex()
+        IW=InputWindow()
+        self.hide()
 
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    w = MainWindow()
-    w.show_window_1()
-    sys.exit(app.exec_())
+    app = QApplication([])
+    mW = MainWindow()
+    app.exec()
