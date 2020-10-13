@@ -44,7 +44,10 @@ procedures = [[('allConcertsSorted',),('SongsOnConcert', 'Введите наз�
 ('CreateTicket4', 'Введите название концерта', 'Введите номер места', 'Введите тип билета (0 или 1)'),
 ('addBand', 'Введите id исполнителя', 'Введите название исполнителя', 'Введите количество человек'),
 ('existingTicketForConcert', 'Введите название концерта')]]
-
+flags = [[0, 1, 1, 1, 1],
+[2, 4, 3, 0, 0, 0, 0, 4, (4, 0)],
+[4, 4, 0, 0],
+[0, 1, 1, (1, 0, 0), (0, 0, 0), (1, 0, 0), (0, 0, 0), 1]]
 
 #                    _oo0oo_
 #                   o8888888o
@@ -87,16 +90,6 @@ def create_connection(host_name, user_name, user_password, db_name):
 
     return connection
 
-# Find result of request by query
-def execute_read_query(connection, query):
-    cursor = connection.cursor()
-    result = None
-    try:
-        cursor.execute(query)
-        result = cursor.fetchall()
-        return result
-    except Error as e:
-        print(f"The error '{e}' occurred")
 
 # Find result of request by procedure
 def execute_procedure(connection, nameOfProcedure, args):
@@ -119,9 +112,16 @@ def execute_procedure(connection, nameOfProcedure, args):
     except Error as e:
         print(f"The error '{e}' occurred")
 
+def createList(lst):
+    result=[] 
+    for i in lst:
+        result.append(i[0])
+    return result    
+
+
+
 
 connection=create_connection('localhost', 'root', 'Vagner99', 'ConcertHalls')
-
 ##############################################################
 
 # Сreation of UI of Application
@@ -130,6 +130,7 @@ class InputWindow(QWidget):
     def __init__(self, parent = None, flags = Qt.WindowFlags()):
         super().__init__(parent=parent, flags=flags)
         self.initUI()
+        
         self.connects()
         self.set_appear()
         self.show()
@@ -144,44 +145,88 @@ class InputWindow(QWidget):
         if amount==1:
             self.txt_on_IW = QLabel(procedures[txt_choose][txt_choose2][1])
             layout_col.addWidget(self.txt_on_IW, alignment=Qt.AlignCenter)
-            self.line1=QLineEdit()
-            self.line1.setValidator(QRegExpValidator(QRegExp('^[А-ЯA-Za-zа-я0-9-.,:!\s]{0,45}$')))
-            layout_col.addWidget(self.line1)
+            self.choose3 = QComboBox()
+            self.line1 = QLineEdit()
+            if flags[txt_choose][txt_choose2]==3:
+                self.choose3.addItems(createList(execute_procedure(connection,'AllSongs',())[0]))
+                layout_col.addWidget(self.choose3, alignment=Qt.AlignCenter)
+            elif flags[txt_choose][txt_choose2]==4:
+                self.choose3.addItems(createList(execute_procedure(connection,'AllBands',())[0]))
+                layout_col.addWidget(self.choose3, alignment=Qt.AlignCenter)
+            elif flags[txt_choose][txt_choose2]==2:
+                self.choose3.addItems(createList(execute_procedure(connection,'AllConcertHalls',())[0]))
+                layout_col.addWidget(self.choose3, alignment=Qt.AlignCenter)    
+            elif flags[txt_choose][txt_choose2]==1:
+                self.choose3.addItems(createList(execute_procedure(connection,'AllConcerts',())[0]))
+                layout_col.addWidget(self.choose3, alignment=Qt.AlignCenter)
+            elif flags[txt_choose][txt_choose2]==0:
+                self.line1.setValidator(QRegExpValidator(QRegExp('^[А-ЯA-Za-zа-я0-9-.,:!\s]{0,45}$')))    
+                layout_col.addWidget(self.line1)
         elif amount==2:
             layout_row_txt = QHBoxLayout()
             layout_row_in = QHBoxLayout()
             self.line1=QLineEdit()
             self.line2=QLineEdit()
-            self.line1.setValidator(QRegExpValidator(QRegExp('^[А-ЯA-Za-zа-я0-9-.,:!\s]{0,45}$')))
+            self.choose3 = QComboBox()
+            if flags[txt_choose][txt_choose2]==3:
+                self.choose3.addItems(createList(execute_procedure(connection,'AllSongs',())[0]))
+                layout_row_in.addWidget(self.choose3, alignment=Qt.AlignCenter)
+            elif flags[txt_choose][txt_choose2]==4:
+                self.choose3.addItems(createList(execute_procedure(connection,'AllBands',())[0]))
+                layout_row_in.addWidget(self.choose3, alignment=Qt.AlignCenter)
+            elif flags[txt_choose][txt_choose2]==2:
+                self.choose3.addItems(createList(execute_procedure(connection,'AllConcertHalls',())[0]))
+                layout_row_in.addWidget(self.choose3, alignment=Qt.AlignCenter)    
+            elif flags[txt_choose][txt_choose2]==1:
+                self.choose3.addItems(createList(execute_procedure(connection,'AllConcerts',())[0]))
+                layout_row_in.addWidget(self.choose3, alignment=Qt.AlignCenter)
+            elif flags[txt_choose][txt_choose2]==0:
+                self.line1.setValidator(QRegExpValidator(QRegExp('^[А-ЯA-Za-zа-я0-9-.,:!\s]{0,45}$')))    
+                layout_row_in.addWidget(self.line1, alignment=Qt.AlignCenter)
             self.line2.setValidator(QRegExpValidator(QRegExp('^[А-ЯA-Za-zа-я0-9-.,:!\s]{0,45}$')))
             self.txt_on_IW1 = QLabel(procedures[txt_choose][txt_choose2][1])
             self.txt_on_IW2 = QLabel(procedures[txt_choose][txt_choose2][2])
-            layout_row_in.addWidget(self.txt_on_IW1, alignment=Qt.AlignCenter)
-            layout_row_in.addWidget(self.txt_on_IW2, alignment=Qt.AlignCenter)
-            layout_row_txt.addWidget(self.line1, alignment=Qt.AlignCenter)
-            layout_row_txt.addWidget(self.line2, alignment=Qt.AlignCenter)
-            layout_col.addLayout(layout_row_in)
+            layout_row_txt.addWidget(self.txt_on_IW1, alignment=Qt.AlignCenter)
+            layout_row_txt.addWidget(self.txt_on_IW2, alignment=Qt.AlignCenter)
+            layout_row_in.addWidget(self.line2, alignment=Qt.AlignCenter)
             layout_col.addLayout(layout_row_txt)
+            layout_col.addLayout(layout_row_in)
+            
         elif amount==3:
             layout_row_txt = QHBoxLayout()
             layout_row_in = QHBoxLayout()
             self.line1=QLineEdit()
             self.line2=QLineEdit()
             self.line3=QLineEdit()
-            self.line1.setValidator(QRegExpValidator(QRegExp('^[А-ЯA-Za-zа-я0-9-.,:!\s]{0,45}$')))
+            self.choose3 = QComboBox()
+            if flags[txt_choose][txt_choose2][0]==3:
+                self.choose3.addItems(createList(execute_procedure(connection,'AllSongs',())[0]))
+                layout_row_in.addWidget(self.choose3, alignment=Qt.AlignCenter)
+            elif flags[txt_choose][txt_choose2][0]==4:
+                self.choose3.addItems(createList(execute_procedure(connection,'AllBands',())[0]))
+                layout_row_in.addWidget(self.choose3, alignment=Qt.AlignCenter)
+            elif flags[txt_choose][txt_choose2][0]==2:
+                self.choose3.addItems(createList(execute_procedure(connection,'AllConcertHalls',())[0]))
+                layout_row_in.addWidget(self.choose3, alignment=Qt.AlignCenter)    
+            elif flags[txt_choose][txt_choose2][0]==1:
+                self.choose3.addItems(createList(execute_procedure(connection,'AllConcerts',())[0]))
+                layout_row_in.addWidget(self.choose3, alignment=Qt.AlignCenter)
+            elif flags[txt_choose][txt_choose2][0]==0:
+                self.line1.setValidator(QRegExpValidator(QRegExp('^[А-ЯA-Za-zа-я0-9-.,:!\s]{0,45}$')))    
+                layout_row_in.addWidget(self.line1, alignment=Qt.AlignCenter)
             self.line2.setValidator(QRegExpValidator(QRegExp('^[А-ЯA-Za-zа-я0-9-.,:!\s]{0,45}$')))
             self.line3.setValidator(QRegExpValidator(QRegExp('^[А-ЯA-Za-zа-я0-9-.,:!\s]{0,45}$')))
             self.txt_on_IW1 = QLabel(procedures[txt_choose][txt_choose2][1])
             self.txt_on_IW2 = QLabel(procedures[txt_choose][txt_choose2][2])
             self.txt_on_IW3 = QLabel(procedures[txt_choose][txt_choose2][3])
-            layout_row_in.addWidget(self.txt_on_IW1, alignment=Qt.AlignCenter)
-            layout_row_in.addWidget(self.txt_on_IW2, alignment=Qt.AlignCenter)
-            layout_row_in.addWidget(self.txt_on_IW3, alignment=Qt.AlignCenter)
-            layout_row_txt.addWidget(self.line1, alignment=Qt.AlignCenter)
-            layout_row_txt.addWidget(self.line2, alignment=Qt.AlignCenter)
-            layout_row_txt.addWidget(self.line3, alignment=Qt.AlignCenter)
-            layout_col.addLayout(layout_row_in)
-            layout_col.addLayout(layout_row_txt)   
+            layout_row_txt.addWidget(self.txt_on_IW1, alignment=Qt.AlignCenter)
+            layout_row_txt.addWidget(self.txt_on_IW2, alignment=Qt.AlignCenter)
+            layout_row_txt.addWidget(self.txt_on_IW3, alignment=Qt.AlignCenter)
+
+            layout_row_in.addWidget(self.line2, alignment=Qt.AlignCenter)
+            layout_row_in.addWidget(self.line3, alignment=Qt.AlignCenter)
+            layout_col.addLayout(layout_row_txt)
+            layout_col.addLayout(layout_row_in) 
 
         layout_row_but.addWidget(self.next_button)
         layout_row_but.addWidget(self.back_button)
@@ -203,11 +248,20 @@ class InputWindow(QWidget):
     def open_result_window(self):
         global result, desc, RW, MW
         if len(procedures[txt_choose][txt_choose2])-1==1:
-            txt_in=[self.line1.text()]
+            if self.line1.text()!='':
+                txt_in=[self.line1.text()]
+            else:    
+                txt_in=[self.choose3.currentText()]
         elif len(procedures[txt_choose][txt_choose2])-1==2:
-            txt_in=[self.line1.text(), self.line2.text()]   
+            if self.line1.text()!='':
+                txt_in=[self.line1.text(), self.line2.text()]
+            else:    
+                txt_in=[self.choose3.currentText(), self.line2.text()]   
         elif len(procedures[txt_choose][txt_choose2])-1==3:
-            txt_in=[self.line1.text(), self.line2.text(), self.line3.text()]
+            if self.line1.text()!='':
+                txt_in=[self.line1.text(), self.line2.text(), self.line3.text()]
+            else:    
+                txt_in=[self.choose3.currentText(), self.line2.text(), self.line3.text()]
 
         result, desc = execute_procedure(connection, procedures[txt_choose][txt_choose2][0], txt_in)
 
@@ -225,7 +279,6 @@ class InputWindow(QWidget):
         global SMW      
         SMW = SecondMenuWindow()
         self.hide()    
-
 
 
 # Window return result of request
@@ -260,6 +313,7 @@ class ResultWindow(QWidget):
         self.setWindowTitle('Result Window')
         self.resize(700, 900)
         self.move(625, 50)
+        
     def connects(self):
         self.to_start_button.clicked.connect(self.open_MainWindow_window)
         self.close_button.clicked.connect(QCoreApplication.instance().quit)
@@ -268,6 +322,7 @@ class ResultWindow(QWidget):
         global MW
         MW = MainWindow()
         self.hide()
+
 
 class SecondMenuWindow(QWidget):
     def __init__(self, parent = None, flags = Qt.WindowFlags()):
@@ -323,7 +378,6 @@ class SecondMenuWindow(QWidget):
         global MW
         MW = MainWindow()
         self.hide()    
-
 
 
 # Main window with choosing of the request
